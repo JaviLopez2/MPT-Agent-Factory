@@ -64,7 +64,7 @@ def alive(pid, started):
     if not pid or not started:
         return False
     stamp = identify(pid)
-    return stamp is not None and abs(stamp - started) < 0.1
+    return stamp is not None and stamp == started
 
 
 def find_runner(request: Path):
@@ -80,30 +80,71 @@ def find_runner(request: Path):
     return None
 
 
+def _wait_stopped(targets, timeout):
+    """Do not call waitpid(host_pid) when /proc uses an outer PID namespace.
+
+    A zombie has already released its resources. Reap only our children using
+    the PID visible to this process; recovered/orphan workers may not be children.
+    """
+    deadline = time.monotonic() + timeout
+    pending = list(targets)
+    while pending:
+        survivors = []
+        for process in pending:
+            try:
+                if not process.is_running():
+                    continue
+                if process.status() == psutil.STATUS_ZOMBIE:
+                    if os.name != "nt":
+                        try:
+                            os.waitpid(_visible_pid(process), os.WNOHANG)
+                        except (ChildProcessError, ProcessLookupError):
+                            pass
+                    continue
+                survivors.append(process)
+            except (FileNotFoundError, ProcessLookupError, psutil.NoSuchProcess):
+                continue
+        pending = survivors
+        if not pending or time.monotonic() >= deadline:
+            return pending
+        time.sleep(0.05)
+    return []
+
+
 def terminate_tree(pid, started):
     """Only signal an owned identity, including its descendants; never kill by port."""
     if not alive(pid, started):
         return
-    parent = _process(pid)
-    children = parent.children(recursive=True)
+    try:
+        parent = _process(pid)
+        # The PID may have been recycled between alive() and this second lookup.
+        if parent.create_time() != started or not parent.is_running():
+            return
+        children = parent.children(recursive=True)
+    except psutil.NoSuchProcess:
+        return
     targets = [*reversed(children), parent]
     for process in targets:
         try:
+            if not process.is_running() or process.status() == psutil.STATUS_ZOMBIE:
+                continue
             if _translated_procfs():
                 os.kill(_visible_pid(process), signal.SIGTERM)
             else:
                 process.terminate()
-        except psutil.NoSuchProcess:
+        except (ProcessLookupError, psutil.NoSuchProcess):
             pass
-    _, survivors = psutil.wait_procs(targets, timeout=3)
+    survivors = _wait_stopped(targets, timeout=3)
     for process in survivors:
         try:
+            if not process.is_running() or process.status() == psutil.STATUS_ZOMBIE:
+                continue
             if _translated_procfs():
                 os.kill(_visible_pid(process), signal.SIGKILL)
             else:
                 process.kill()
-        except psutil.NoSuchProcess:
+        except (ProcessLookupError, psutil.NoSuchProcess):
             pass
-    _, survivors = psutil.wait_procs(survivors, timeout=3)
+    survivors = _wait_stopped(survivors, timeout=3)
     if survivors:
         raise RuntimeError("Could not stop owned process tree; queue remains blocked")

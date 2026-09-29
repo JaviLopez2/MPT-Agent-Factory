@@ -275,3 +275,23 @@ def test_unknown_param_fails_at_real_boundary(stack, spec):
     row = finish(Supervisor(cfg), job)
     assert row["state"] == "failed"
     assert "Unknown VideoParams" in row["error"]
+
+
+def test_malformed_diagnostics_does_not_crash_evaluator(tmp_path, spec):
+    atomic_json(tmp_path / "precision_diagnostics.json", {
+        "schema_version": 3, "status": "completed", "plan_scenes": None})
+    result = evaluate(tmp_path, collect(tmp_path), spec, "ffprobe")
+    assert result["technical_pass"] is False
+    assert "Malformed plan_scenes" in result["failures"]
+
+
+def test_config_preserves_venv_python_symlink(tmp_path):
+    from mpt_factory.config import load_config
+    exe = tmp_path / "venv-python"
+    try:
+        exe.symlink_to(sys.executable)
+    except OSError:
+        pytest.skip("Symlink creation unavailable")
+    config = tmp_path / "config.toml"
+    config.write_text(f"[mpt]\nroot='mpt'\npython='{exe}'\nworktrees_dir='trees'\n")
+    assert load_config(config).mpt_python == exe

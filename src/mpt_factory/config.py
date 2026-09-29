@@ -39,9 +39,12 @@ def load_config(path: str | Path | None = None) -> Config:
     raw = tomllib.loads(file.read_text(encoding="utf-8-sig"))
     factory, mpt = raw.get("factory", {}), raw["mpt"]
 
-    def local(value):
+    def local(value, resolve_links=True):
         result = Path(os.path.expandvars(str(value))).expanduser()
-        return (file.parent / result).resolve() if not result.is_absolute() else result.resolve()
+        result = file.parent / result if not result.is_absolute() else result
+        # Resolving a venv's python symlink silently launches the base interpreter
+        # without its installed packages. Preserve the executable's lexical path.
+        return result.resolve() if resolve_links else result.absolute()
 
     data = local(factory.get("data_dir", "data"))
     root = local(mpt["root"])
@@ -59,7 +62,7 @@ def load_config(path: str | Path | None = None) -> Config:
             raise ValueError("v0.1 service management is restricted to local HTTP endpoints")
         if item.get("command") and not isinstance(item["command"], list):
             raise ValueError("Service command must be an argv array, never a shell string")
-    cfg = Config(file, data, root, local(mpt["python"]),
+    cfg = Config(file, data, root, local(mpt["python"], resolve_links=False),
                  mpt.get("branch", "moneyprinter_qwen21_quality_v3_1"), worktrees,
                  float(factory.get("poll_seconds", 2)),
                  float(factory.get("job_timeout_seconds", 14400)),

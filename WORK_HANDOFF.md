@@ -1,6 +1,61 @@
 # MPT Agent Factory v0.1 — handoff
 
+> **Actualización al retomar, 2026-09-29:** el contenido histórico que sigue se
+> conserva para trazabilidad. El estado vigente está en `README.md` y
+> `docs/VALIDATION.md`. Factory ya tiene Git local (checkpoint `f4dbfad`); se han
+> corregido las regresiones demostradas de identidad/espera de PID, completado
+> la prueba de recuperación con cancelación del árbol y generado un MP4 con MPT
+> real usando material local. Última suite Factory: **29 passed in 3.56 s**.
+> Dashboard 8600: HTTP 200 y un vídeo del job real mostrado por AppTest sin
+> excepciones. Windows nativo y Qwen/ComfyUI siguen pendientes de prueba.
+> Se detectó y conservó una modificación preexistente del font en el worktree
+> antiguo de integración; stable sigue limpio. Consultar el documento de
+> validación para los detalles y no usar las limitaciones históricas como si
+> fueran el estado actual.
+
 Estado congelado para retomar el trabajo con Astra. Fecha de este handoff: 2026-09-29.
+
+## Estado vigente al cierre de la vertical slice
+
+La última ejecución de `compileall` y pytest fue:
+
+```text
+.venv/bin/python -m compileall -q src && .venv/bin/python -m pytest -q
+.............................                                            [100%]
+29 passed in 3.56s
+```
+
+El dashboard separado en `127.0.0.1:8600` devolvió `HTTP 200 ok`; AppTest abrió la
+DB del job MPT real, mostró el vídeo y no registró excepciones. La generación real
+usó material local y terminó `succeeded` con MP4 1080×1920 de 3,030 s. El detalle
+reproducible está en `TEST_REPORT.md` y `docs/VALIDATION.md`.
+
+El problema de cancelación pendiente es específico de workflows ya enviados a
+ComfyUI: Factory puede terminar el worker local y conserva el estado, pero no envía
+un `/interrupt` global al ComfyUI compartido. El siguiente job de imágenes espera
+la cola libre según el preflight. Tampoco están validados Windows nativo, los cuatro
+servicios reales ni una generación Qwen con diagnostics reales.
+
+### Limitaciones específicas del entorno Work
+
+La validación se hizo en Linux, Python 3.12.14, con namespace PID anidado. La
+traducción `NSpid` está cubierta por tests Linux; la rama Windows de psutil no se
+ha ejecutado. Procesos de llamadas de herramienta separadas pueden estar en
+namespaces de red distintos: una prueba cruzada de 8600 falló por `connection
+refused`, y la prueba válida se repitió con cliente y servidor en el mismo proceso.
+El Work no tenía acceso a tus procesos, modelos, tokens ni rutas Windows, por lo
+que la prueba Qwen/ComfyUI queda para tu PC. No se ha creado un remoto GitHub; el
+proyecto se entrega como repo Git local y bundle dentro del ZIP.
+
+### Estado Git al cierre
+
+Factory contiene todos los cambios válidos de esta sesión en su rama local `main`.
+`mpt-source`, rama `moneyprinter_qwen21_quality_v3_1`, commit
+`6d27ba4963ffe469d635db71eaeec506a8ff4b61`, permanece limpio. El worktree antiguo
+`mpt-integration-source` conserva la modificación preexistente de
+`resource/fonts/STHeitiMedium.ttc`; no se revirtió. El worktree nuevo de validación
+se dejó limpio tras restaurar su font desde HEAD. El ZIP excluye secretos, `factory.toml`,
+SQLite, logs activos, `.venv` y caches.
 
 ## Alcance de esta sesión
 
@@ -63,9 +118,9 @@ probe de importación pueda cargar la configuración de MPT.
 /workspace/scratch/845a021772d1/MPT-Agent-Factory
 ```
 
-Todavía no es un repositorio Git: no contiene `.git`, por lo que `git status` devuelve
-`fatal: not a git repository`. Los archivos del proyecto existen en el filesystem, pero
-no hay commit, rama ni remoto de Factory todavía.
+Es un repositorio Git local en la rama `main`. El checkpoint recibido era `f4dbfad`;
+el SHA exacto se registra en la respuesta de cierre y puede comprobarse con `git rev-parse HEAD`. No hay remoto
+de Factory.
 
 Fuera del proyecto se generaron para la comprobación local:
 
@@ -290,4 +345,3 @@ desactivada. Esa prueba no se ejecutó antes del corte.
    eventos desde el dashboard.
 8. Solo después de esa prueba, considerar registrar Factory como repositorio separado y
    añadir más evaluación. Auto-merge, publicación y auto-mejora LLM siguen fuera de v0.1.
-

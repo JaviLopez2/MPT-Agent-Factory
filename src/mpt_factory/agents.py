@@ -8,7 +8,7 @@ from mpt_factory import artifacts
 
 
 class VideoAgent(Protocol):
-    def launch(self, job: dict, request: Path) -> tuple[int, float]: ...
+    def launch(self, job: dict, request: Path) -> tuple[int, float | None]: ...
 
 
 class EvaluatorAgent(Protocol):

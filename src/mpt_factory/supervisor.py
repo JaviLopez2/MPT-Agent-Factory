@@ -29,7 +29,9 @@ class MPTVideoAgent:
                 cwd=request.parent, stdout=output, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, env=env, **detached_options())
         self.children[process.pid] = process
-        return process.pid, identify(process.pid) or now()
+        # An already-exited child may have no identity; recovery uses request argv
+        # and its durable result. Never substitute the supervisor's wall clock.
+        return process.pid, identify(process.pid)
 
     def reap(self):
         for pid, process in list(self.children.items()):

@@ -55,6 +55,9 @@ def evaluate(folder, artifacts, spec, ffprobe):
                 failures.append("Invalid precision_diagnostics.json")
                 continue
             scenes = diagnostic.get("plan_scenes", [])
+            if not isinstance(scenes, list):
+                failures.append("Malformed plan_scenes")
+                scenes = []
             summary = {k: diagnostic.get(k) for k in ("schema_version", "status", "scene_count", "generated_scene_count")}
             summary["precision_scenes"] = sum(s.get("route") == "precision" for s in scenes if isinstance(s, dict))
             diagnostics.append(summary)
