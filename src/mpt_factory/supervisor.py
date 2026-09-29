@@ -29,6 +29,22 @@ class MPTVideoAgent:
                 cwd=request.parent, stdout=output, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, env=env, **detached_options())
         self.children[process.pid] = process
+        # Windows virtual-environment launchers may expose a launcher PID while the
+        # real Python interpreter that runs MPT has a different PID. runner.py
+        # publishes its own PID immediately in worker.json; persist that identity
+        # instead of assuming Popen.pid is the long-lived worker.
+        worker_file = request.parent / "worker.json"
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            data = read_json(worker_file, {}) or {}
+            worker_pid = data.get("pid")
+            if worker_pid:
+                worker_started = identify(worker_pid)
+                if worker_started is not None:
+                    return int(worker_pid), worker_started
+            if process.poll() is not None:
+                break
+            time.sleep(0.02)
         # An already-exited child may have no identity; recovery uses request argv
         # and its durable result. Never substitute the supervisor's wall clock.
         return process.pid, identify(process.pid)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import signal
@@ -67,17 +68,52 @@ def alive(pid, started):
     return stamp is not None and stamp == started
 
 
+def _matches_runner(process, request: Path):
+    try:
+        args = process.cmdline() or []
+        return (
+            str(request) in args
+            and any(Path(a).name == "runner.py" for a in args)
+            and process.status() != psutil.STATUS_ZOMBIE
+        )
+    except (OSError, psutil.NoSuchProcess, psutil.AccessDenied):
+        return False
+
+
 def find_runner(request: Path):
-    """Recover the spawn/SQLite update crash window using an exact argv element."""
-    for process in psutil.process_iter(["pid", "cmdline", "create_time", "status"]):
+    """Recover the spawn/SQLite update crash window using runner-owned evidence.
+
+    Windows can expose both a short-lived venv launcher and the real interpreter
+    with equivalent argv. worker.json is written by runner.py itself, so prefer it
+    after verifying that the PID still executes this exact immutable request.
+    """
+    worker_file = request.parent / "worker.json"
+    try:
+        data = json.loads(worker_file.read_text(encoding="utf-8-sig"))
+        worker_pid = int(data.get("pid") or 0)
+    except (FileNotFoundError, ValueError, TypeError, json.JSONDecodeError):
+        worker_pid = 0
+    if worker_pid:
         try:
-            args = process.info["cmdline"] or []
-            if str(request) in args and any(Path(a).name == "runner.py" for a in args):
-                if process.info["status"] != psutil.STATUS_ZOMBIE:
-                    return _visible_pid(process), process.info["create_time"]
+            process = _process(worker_pid)
+            if _matches_runner(process, request):
+                return worker_pid, process.create_time()
+        except (OSError, psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    matches = []
+    for process in psutil.process_iter(["pid", "create_time", "status"]):
+        try:
+            if _matches_runner(process, request):
+                matches.append(process)
         except (OSError, psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return None
+    if not matches:
+        return None
+    # If recovery happens before worker.json is durable, prefer the newest exact
+    # argv match rather than an older launcher wrapper.
+    process = max(matches, key=lambda item: item.create_time())
+    return _visible_pid(process), process.create_time()
 
 
 def _wait_stopped(targets, timeout):

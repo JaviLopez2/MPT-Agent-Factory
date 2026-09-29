@@ -170,6 +170,10 @@ def main():
     folder = request_path.parent
     done = threading.Event()
     result = {"job_id": request["job_id"], "started": now(), "status": "failed"}
+    # Publish the identity of the actual interpreter before taking the GPU lock.
+    # This is distinct from the PID returned by Popen on Windows when a venv
+    # launcher/redirector process sits in front of the real Python process.
+    atomic_json(folder / "worker.json", {"pid": os.getpid(), "time": now()})
 
     def heartbeat():
         while not done.is_set():
