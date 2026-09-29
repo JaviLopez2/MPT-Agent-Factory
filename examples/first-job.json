@@ -1,0 +1,20 @@
+{
+  "params": {
+    "video_subject": "Un paseo por un bosque al amanecer",
+    "video_script": "Al amanecer, la luz atraviesa las copas de los árboles. El suelo del bosque conserva la humedad de la noche. Un sendero estrecho avanza entre los troncos y desaparece en la distancia.",
+    "video_source": "openai_image",
+    "video_language": "es-ES",
+    "voice_name": "es-ES-AlvaroNeural-Male",
+    "video_aspect": "9:16",
+    "video_count": 1,
+    "video_concat_mode": "sequential",
+    "match_materials_to_script": true,
+    "bgm_type": "",
+    "subtitle_enabled": false,
+    "n_threads": 2
+  },
+  "profile": "balanced",
+  "reference_mode": "user_first",
+  "references": [],
+  "required_services": ["llama", "bridge", "comfyui"]
+}

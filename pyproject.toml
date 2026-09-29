@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mpt-agent-factory"
+version = "0.1.0"
+description = "Deterministic local orchestration for CustomVideoGenerator"
+requires-python = ">=3.11"
+dependencies = ["psutil>=5.9,<8", "streamlit>=1.59,<2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "loguru>=0.7,<1"]
+
+[project.scripts]
+mpt-factory = "mpt_factory.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

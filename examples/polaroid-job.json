@@ -1,0 +1,25 @@
+{
+  "params": {
+    "video_subject": "Cómo funciona una Polaroid SX-70: desde que pulsas el disparador hasta que aparece la fotografía.",
+    "video_source": "openai_image",
+    "video_language": "es-ES",
+    "voice_name": "es-ES-AlvaroNeural-Male",
+    "video_aspect": "9:16",
+    "video_count": 1,
+    "video_concat_mode": "sequential",
+    "match_materials_to_script": true,
+    "bgm_type": "",
+    "subtitle_enabled": false,
+    "n_threads": 2
+  },
+  "profile": "balanced",
+  "reference_mode": "user_only",
+  "references": [
+    {"path": "D:/Refs/SX70/01_sx70_general_identity.png", "role": "identity", "anchor": true, "description": "Vista completa de la cámara Polaroid SX-70; ancla de identidad."},
+    {"path": "D:/Refs/SX70/02_sx70_primary_front.jpg", "role": "identity", "description": "Vista frontal completa de la cámara SX-70."},
+    {"path": "D:/Refs/SX70/03_sx70_alternate_threequarter.jpg", "role": "identity", "description": "Vista completa a tres cuartos de la misma cámara."},
+    {"path": "D:/Refs/SX70/04_sx70_profile_side.jpg", "role": "identity", "description": "Perfil lateral completo de la cámara y su geometría plegable."},
+    {"path": "D:/Refs/SX70/05_sx70_rear_specialized.jpg", "role": "identity", "description": "Vista trasera exterior de la cámara."},
+    {"path": "D:/Refs/SX70/06_sx70_detail_front_controls.jpg", "role": "detail", "description": "Detalle exterior de los controles frontales, objetivo y botón disparador rojo."}
+  ]
+}
