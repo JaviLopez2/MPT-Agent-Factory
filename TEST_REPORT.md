@@ -1,5 +1,29 @@
 # Test report — MPT Agent Factory v0.1
 
+## Consolidación Windows y revisión actual — 2026-09-30
+
+El usuario confirmó una ejecución nativa Windows posterior al fix de
+`worker.json`: **29 tests passed**. Esa duración y su salida completa no están
+disponibles en este entorno Work, así que no se inventa una cifra.
+
+La revisión actual añade el handshake y las regresiones de
+`tests/test_windows_worker.py`, más validaciones estáticas del benchmark. Ejecutada
+en el entorno Linux de Work:
+
+```text
+.venv/bin/python -m compileall -q src scripts
+.venv/bin/python -m pytest -q
+....................................                             [100%]
+44 passed in 5.28s
+```
+
+La prueba cubre fixtures y procesos locales; no equivale a otra ejecución Windows.
+El benchmark Polaroid/SX-70 no se ha ejecutado desde Factory.
+
+La evidencia de jobs Windows aportada por el usuario está en
+`validation/windows-confirmed.json`. El bosque produjo `precision_scenes=0`, por
+lo que la ruta Precision con referencias sigue pendiente de validar.
+
 Fecha: 2026-09-29. Este documento registra la última ejecución realizada en el
 entorno de trabajo; no es una predicción para Windows ni para el stack Qwen del PC.
 

@@ -1,5 +1,125 @@
 # MPT Agent Factory v0.1 — handoff
 
+## Consolidación actual — 2026-09-30
+
+Este bloque es el estado que Astra debe tomar como vigente. El historial de abajo
+se conserva para no perder contexto, pero sus límites anteriores sobre Windows y
+el benchmark ya no describen todo lo validado.
+
+### Estado Git y alcance
+
+- Factory está en la rama local `main`; este cierre deja un commit de checkpoint.
+- `mpt-source` sigue limpio en `moneyprinter_qwen21_quality_v3_1`, commit
+  `6d27ba4963ffe469d635db71eaeec506a8ff4b61`. No se ha modificado el core estable.
+- La integración del handshake se limita a Factory: `runner.py` escribe
+  `worker.json` con el PID del intérprete real antes del lock GPU; `supervisor.py`
+  espera ese archivo y guarda PID + `create_time`; `processes.py` valida PID,
+  argv exacto del `request.json`, proceso no zombie y fecha de creación antes de
+  recuperar o cancelar. Si no existe un handshake válido, conserva el fallback
+  por argv exacto para ventanas de crash.
+- `scripts/queue-polaroid.py` es tooling de preparación: valida rama/configuración,
+  localiza el pack y encola una sola vez. No arranca servicios, no cambia MPT y no
+  ejecuta el pipeline durante sus tests.
+
+### Validaciones reales registradas
+
+La suite de la revisión actual en este entorno Linux terminó así:
+
+```text
+.venv/bin/python -m compileall -q src scripts
+.venv/bin/python -m pytest -q
+....................................                             [100%]
+44 passed in 5.28s
+```
+
+El resultado de Windows fue comunicado desde el PC del usuario después del fix:
+**29 tests passed**. No se repitió Windows desde este entorno Work y no se le asigna
+una duración inventada. Las nuevas regresiones Windows se ejecutaron aquí con
+fixtures/mocks y procesos locales; documentan el handshake y pasan dentro de los
+44 tests, pero no sustituyen una nueva ejecución nativa.
+
+Los resultados Windows aportados y conservados en `validation/windows-confirmed.json`
+son:
+
+- `local-smoke`: job `627c291e-270c-468e-bf97-774b148034e7`, `succeeded`,
+  `technical_pass=true`, MP4 1080×1920 de 3,030 s, 14 artifacts.
+- Bosque IA: job `f3f0cbd9-2f85-457c-9db9-15e7371ccd8f`, `succeeded`, progreso 100,
+  `technical_pass=true`, MP4 1080×1920 de 10,300 s, 19 artifacts, diagnostics
+  schema 3, `generated_scene_count=3`, `precision_scenes=0`.
+- El bosque esperó cinco intentos de preflight mientras ComfyUI estaba apagado y
+  continuó cuando el servicio volvió. Esto valida espera/reintento de disponibilidad;
+  `precision_scenes=0` deja sin probar la ruta Precision con referencias.
+
+### Handshake y regresiones añadidas
+
+Archivos nuevos: `tests/test_windows_worker.py`, `tests/test_benchmark_inputs.py`,
+`scripts/queue-polaroid.py`, `validation/windows-confirmed.json`.
+
+Las regresiones cubren: launcher Windows con PID distinto al intérprete real,
+preferencia del PID publicado en `worker.json`, JSON inválido o PID ajeno, proceso
+que desaparece durante la comprobación, cancelación sin matar otro job, recuperación
+después de perder el PID persistido, liberación del lock GPU y rechazo de referencias
+fuera del directorio permitido. También se verificó que `examples/polaroid-job.json`
+usa únicamente campos soportados por `VideoParams`.
+
+### Benchmark Polaroid/SX-70 preparado pero no ejecutado
+
+`examples/polaroid-job.json` conserva el tema original y ahora incluye:
+
+```text
+video_source=openai_image
+profile=balanced
+reference_mode=user_only
+required_services=[llama, bridge, comfyui]
+video_aspect=9:16
+video_count=1
+video_concat_mode=sequential
+match_materials_to_script=true
+voice_name=es-ES-AlvaroNeural-Male
+subtitle_enabled=false
+bgm_type=""
+n_threads=2
+```
+
+Las seis referencias, en el orden del manifest histórico del benchmark, son:
+
+| Archivo | Rol | Ancla | Descripción restaurada |
+| --- | --- | --- | --- |
+| `06_sx70_detail_front_controls.jpg` | `detail` | no | Close visible detail of the Polaroid SX-70 front controls, lens area, red shutter button and front panel. |
+| `05_sx70_rear_specialized.jpg` | `identity` | no | Rear whole-subject view of the Polaroid SX-70 showing the back exterior, rear body geometry and overall proportions. |
+| `03_sx70_alternate_threequarter.jpg` | `identity` | no | Front three-quarter whole-subject view of the Polaroid SX-70 showing its overall shape, proportions and folding geometry. |
+| `04_sx70_profile_side.jpg` | `identity` | no | Exact side profile of the whole Polaroid SX-70 showing the folding geometry, bellows silhouette, base and body proportions. |
+| `01_sx70_general_identity.png` | `identity` | sí | Overall Polaroid SX-70 whole-subject identity, proportions, folding body, materials and general geometry. |
+| `02_sx70_primary_front.jpg` | `identity` | no | Straight front view of the whole Polaroid SX-70, front body geometry, lens area and overall proportions. |
+
+`continuity` no se usa como rol manual: sigue siendo metadato del planner. El
+runner crea el manifest de referencias de tarea con schema 4. El diagnóstico de
+generación que se espera después del benchmark es `precision_diagnostics.json`
+schema 3; el bosque ya produjo schema 3, pero con cero escenas Precision.
+
+La validación de parser realizada aquí fue estática: JSON válido, seis referencias,
+un único anchor, roles `identity/detail`, parámetros contenidos en `VideoParams` y
+configuración Balanced esperada (9 escenas, ratio Precision 0,65, 20 pasos, un
+candidato). No se ha ejecutado Polaroid desde Factory y no se ha simulado su salida.
+
+### Tareas pendientes exactas
+
+1. Ejecutar en Windows los 44 tests de esta revisión y confirmar el resultado nativo;
+   el usuario ya confirmó 29 passed para la revisión anterior del fix.
+2. Colocar/verificar las seis imágenes SX-70 en `D:\Refs\SX70` o pasar su carpeta a
+   `queue-polaroid.py --references`.
+3. Confirmar que `config.toml` de MPT tiene modelo efectivo
+   `qwen-image-2.1-precision` y los ajustes Balanced; el helper aborta sin modificar
+   nada si no coinciden.
+4. Con los cuatro servicios disponibles, ejecutar el comando de encolado una sola
+   vez, dejar el supervisor procesar el job y recoger MP4, imágenes, diagnostics,
+   manifest de referencias, `result.json`, `evaluation.json`, `mpt.jsonl`,
+   `worker.log`, `provenance.json` y `artifact_manifest.json`.
+5. Analizar manualmente el vídeo y las imágenes. `technical_pass` no certifica
+   identidad, continuidad ni calidad visual.
+
+No se implementaron Evaluator LLM, Engineer Agent autónomo, auto-merge ni publicación.
+
 > **Actualización al retomar, 2026-09-29:** el contenido histórico que sigue se
 > conserva para trazabilidad. El estado vigente está en `README.md` y
 > `docs/VALIDATION.md`. Factory ya tiene Git local (checkpoint `f4dbfad`); se han

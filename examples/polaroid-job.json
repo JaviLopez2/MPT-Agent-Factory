@@ -14,12 +14,47 @@
   },
   "profile": "balanced",
   "reference_mode": "user_only",
+  "required_services": [
+    "llama",
+    "bridge",
+    "comfyui"
+  ],
   "references": [
-    {"path": "D:/Refs/SX70/01_sx70_general_identity.png", "role": "identity", "anchor": true, "description": "Vista completa de la cámara Polaroid SX-70; ancla de identidad."},
-    {"path": "D:/Refs/SX70/02_sx70_primary_front.jpg", "role": "identity", "description": "Vista frontal completa de la cámara SX-70."},
-    {"path": "D:/Refs/SX70/03_sx70_alternate_threequarter.jpg", "role": "identity", "description": "Vista completa a tres cuartos de la misma cámara."},
-    {"path": "D:/Refs/SX70/04_sx70_profile_side.jpg", "role": "identity", "description": "Perfil lateral completo de la cámara y su geometría plegable."},
-    {"path": "D:/Refs/SX70/05_sx70_rear_specialized.jpg", "role": "identity", "description": "Vista trasera exterior de la cámara."},
-    {"path": "D:/Refs/SX70/06_sx70_detail_front_controls.jpg", "role": "detail", "description": "Detalle exterior de los controles frontales, objetivo y botón disparador rojo."}
+    {
+      "path": "D:/Refs/SX70/06_sx70_detail_front_controls.jpg",
+      "role": "detail",
+      "anchor": false,
+      "description": "Close visible detail of the Polaroid SX-70 front controls, lens area, red shutter button and front panel."
+    },
+    {
+      "path": "D:/Refs/SX70/05_sx70_rear_specialized.jpg",
+      "role": "identity",
+      "anchor": false,
+      "description": "Rear whole-subject view of the Polaroid SX-70 showing the back exterior, rear body geometry and overall proportions."
+    },
+    {
+      "path": "D:/Refs/SX70/03_sx70_alternate_threequarter.jpg",
+      "role": "identity",
+      "anchor": false,
+      "description": "Front three-quarter whole-subject view of the Polaroid SX-70 showing its overall shape, proportions and folding geometry."
+    },
+    {
+      "path": "D:/Refs/SX70/04_sx70_profile_side.jpg",
+      "role": "identity",
+      "anchor": false,
+      "description": "Exact side profile of the whole Polaroid SX-70 showing the folding geometry, bellows silhouette, base and body proportions."
+    },
+    {
+      "path": "D:/Refs/SX70/01_sx70_general_identity.png",
+      "role": "identity",
+      "anchor": true,
+      "description": "Overall Polaroid SX-70 whole-subject identity, proportions, folding body, materials and general geometry."
+    },
+    {
+      "path": "D:/Refs/SX70/02_sx70_primary_front.jpg",
+      "role": "identity",
+      "anchor": false,
+      "description": "Straight front view of the whole Polaroid SX-70, front body geometry, lens area and overall proportions."
+    }
   ]
 }

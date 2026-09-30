@@ -1,0 +1,177 @@
+{
+  "recorded_on": "2026-09-30",
+  "windows_suite": {
+    "passed": 29,
+    "duration_seconds": null,
+    "source": "User confirmation in conversation; final Windows pytest output not supplied with a commit SHA"
+  },
+  "jobs": [
+    {
+      "source": "Texto pegado(3).txt",
+      "source_kind": "Windows console export supplied by user",
+      "job_id": "f3f0cbd9-2f85-457c-9db9-15e7371ccd8f",
+      "state": "succeeded",
+      "progress": 100,
+      "technical_pass": true,
+      "video": [
+        {
+          "streams": [
+            {
+              "codec_type": "video",
+              "width": 1080,
+              "height": 1920
+            },
+            {
+              "codec_type": "audio"
+            }
+          ],
+          "duration": "10.300000"
+        }
+      ],
+      "diagnostics": [
+        {
+          "schema_version": 3,
+          "status": "completed",
+          "scene_count": 3,
+          "generated_scene_count": 3,
+          "precision_scenes": 0
+        }
+      ],
+      "artifact_count": 19,
+      "preflight_attempts": 5,
+      "worker_handshake_registered": true,
+      "state_transitions": [
+        {
+          "from": null,
+          "to": "created"
+        },
+        {
+          "from": "created",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "running"
+        },
+        {
+          "from": "running",
+          "to": "collecting"
+        },
+        {
+          "from": "collecting",
+          "to": "evaluating"
+        },
+        {
+          "from": "evaluating",
+          "to": "succeeded"
+        }
+      ]
+    },
+    {
+      "source": "Texto pegado(2).txt",
+      "source_kind": "Windows console export supplied by user",
+      "job_id": "627c291e-270c-468e-bf97-774b148034e7",
+      "state": "succeeded",
+      "progress": 100,
+      "technical_pass": true,
+      "video": [
+        {
+          "streams": [
+            {
+              "codec_type": "video",
+              "width": 1080,
+              "height": 1920
+            },
+            {
+              "codec_type": "audio"
+            }
+          ],
+          "duration": "3.030000"
+        }
+      ],
+      "diagnostics": [],
+      "artifact_count": 14,
+      "preflight_attempts": 0,
+      "worker_handshake_registered": true,
+      "state_transitions": [
+        {
+          "from": null,
+          "to": "created"
+        },
+        {
+          "from": "created",
+          "to": "queued"
+        },
+        {
+          "from": "queued",
+          "to": "preparing"
+        },
+        {
+          "from": "preparing",
+          "to": "running"
+        },
+        {
+          "from": "running",
+          "to": "collecting"
+        },
+        {
+          "from": "collecting",
+          "to": "evaluating"
+        },
+        {
+          "from": "evaluating",
+          "to": "succeeded"
+        }
+      ]
+    }
+  ],
+  "polaroid_via_factory_executed": false,
+  "notes": [
+    "precision_scenes=0 in forest output; Precision reference-edit route remains unverified in Factory until SX-70.",
+    "No generation was run by the assistant in this consolidation."
+  ]
+}

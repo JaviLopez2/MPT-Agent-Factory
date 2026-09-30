@@ -5,9 +5,10 @@ recuperar su estado y revisar sus resultados. Proyecto separado de
 `JaviLopez2/CustomVideoGenerator`; no incorpora ni modifica su código.
 
 La primera vertical slice está ejecutada contra MPT real con un material local:
-SQLite → worker MPT → MP4 → evaluación técnica → dashboard. La generación con
-Qwen/ComfyUI y el comportamiento nativo de Windows quedan pendientes de validación
-en el PC del usuario. Evidencias y límites: [VALIDATION.md](docs/VALIDATION.md).
+SQLite → worker MPT → MP4 → evaluación técnica → dashboard. El bosque Qwen/ComfyUI
+y el handshake Windows ya fueron validados desde el PC del usuario. La ruta
+Precision con referencias SX-70 sigue pendiente. Evidencias y límites:
+[VALIDATION.md](docs/VALIDATION.md).
 
 ## Arquitectura
 
@@ -185,6 +186,10 @@ hay jobs activos. El 404 de 8090 no sustituye la prueba real de generación.
 
 - Ctrl+C detiene el supervisor; el worker separado sigue ejecutándose. Reinicia el
   supervisor con el mismo `factory.toml` para recuperar el intento y su resultado.
+- El worker escribe `worker.json` con el PID de su intérprete real. En Windows,
+  donde un launcher puede tener otro PID, el supervisor espera ese handshake y
+  valida PID, argv del request, estado y fecha de creación antes de recuperar o
+  cancelar.
 - Se almacena PID y fecha exacta de creación. Si falta la identidad tras un crash,
   se busca el argumento exacto del `request.json` único del job. No se relanza a ciegas.
 - En Linux con `/proc` de un namespace exterior se traduce el PID antes de señalar
@@ -218,6 +223,22 @@ La suite completa requiere `ffmpeg` y `ffprobe` en PATH:
 .\.venv\Scripts\python.exe -m compileall -q src
 .\.venv\Scripts\python.exe -m pytest -q
 ```
+
+## Benchmark SX-70 preparado
+
+Con el supervisor ya iniciado y las seis imágenes en `D:\Refs\SX70`, este comando
+valida la configuración, toma el pack `identity/detail` en el orden del benchmark
+y encola exactamente un job. No modifica MPT ni ejecuta la generación:
+
+```powershell
+Set-Location 'D:\Apps\MPT-Agent-Factory'
+.\.venv\Scripts\python.exe .\scripts\queue-polaroid.py --references 'D:\Refs\SX70'
+```
+
+El helper exige el modelo efectivo `qwen-image-2.1-precision` y los ajustes Balanced
+auditados. Si alguna ruta o ajuste no coincide, termina antes de crear el job.
+Consulta `examples/polaroid-job.json` y `WORK_HANDOFF.md` para el JSON y las seis
+descripciones restauradas.
 
 ## Experimentos aislados
 
@@ -255,7 +276,7 @@ consistente o usa la API de backup de SQLite.
 
 ## Pendiente después de v0.1
 
-Validación nativa Windows, generación completa Qwen/ComfyUI y prueba prolongada de
-cola; evaluación visual/factual; benchmarks repetidos; Engineer Agent que proponga
+Benchmark Precision SX-70, evaluación visual/factual y prueba prolongada de cola;
+benchmarks repetidos; Engineer Agent que proponga
 experimentos; ejecución como servicio del sistema y políticas de retención.
 El código actual no publica ni se modifica a sí mismo.

@@ -146,11 +146,11 @@ del core ni se instaló nada en el PC del usuario.
   truncado en el checkout y se restauró allí desde HEAD antes de generar; no se
   alteró el worktree previo ni el stable. Su `config.toml` local está ignorado.
 
-Pendiente: ejecutar regresiones en Windows nativo, smoke local en el Python portable,
-generación Qwen/ComfyUI con diagnostics reales, benchmark SX-70 y prueba prolongada
-de cola. La rama Windows usa psutil directamente; no se presenta como verificada
-en Windows por haber pasado los tests Linux. Tampoco se han validado la calidad
-visual, auto-mejora, publicación ni promoción: esas funciones no están implementadas.
+Pendiente: repetir la suite completa de esta revisión en Windows nativo; el usuario
+confirmó 29 tests passed para la revisión Windows del fix, pero esta ejecución no
+está disponible en Work. También falta el benchmark Precision SX-70, la evaluación
+visual/factual y una prueba prolongada de cola. Tampoco se han validado auto-mejora,
+publicación ni promoción: esas funciones no están implementadas.
 
 Orden recomendado en el PC: `doctor --probe-mpt` → tests de recuperación/servicios
 → smoke local → dashboard → `examples/first-job.json` con el stack habitual →
