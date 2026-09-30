@@ -226,6 +226,12 @@ La suite completa requiere `ffmpeg` y `ffprobe` en PATH:
 
 ## Benchmark SX-70 preparado
 
+El job incluye el guion controlado completo en `params.video_script`; no debe
+regenerarse con un LLM. La primera ejecución del 30/09 sí produjo vídeo, pero no
+validó Precision: le faltaba ese guion y MPT omitió el planner al desactivar
+subtítulos. Antes de repetir, usar el candidato MPT `factory/narration-timeline`
+en un worktree aislado. Preparación sin generación: [VALIDATION.md](docs/VALIDATION.md).
+
 Con el supervisor ya iniciado y las seis imágenes en `D:\Refs\SX70`, este comando
 valida la configuración, toma el pack `identity/detail` en el orden del benchmark
 y encola exactamente un job. No modifica MPT ni ejecuta la generación:
@@ -236,7 +242,8 @@ Set-Location 'D:\Apps\MPT-Agent-Factory'
 ```
 
 El helper exige el modelo efectivo `qwen-image-2.1-precision` y los ajustes Balanced
-auditados. Si alguna ruta o ajuste no coincide, termina antes de crear el job.
+auditados y rechaza un `video_script` ausente/vacío. Si alguna ruta o ajuste no
+coincide, termina antes de crear el job. El script se conserva en SQLite y snapshot.
 Consulta `examples/polaroid-job.json` y `WORK_HANDOFF.md` para el JSON y las seis
 descripciones restauradas.
 

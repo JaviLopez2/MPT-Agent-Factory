@@ -1,6 +1,7 @@
 {
   "params": {
     "video_subject": "Cómo funciona una Polaroid SX-70: desde que pulsas el disparador hasta que aparece la fotografía.",
+    "video_script": "La Polaroid SX-70 parece revelar una fotografía casi por arte de magia, pero todo el proceso ocurre automáticamente dentro de la cámara y de la propia hoja de película.\n\nCuando pulsas el disparador, la luz entra a través del objetivo y queda registrada en las capas fotosensibles de la película.\n\nDespués de la exposición, el mecanismo de la cámara expulsa la fotografía hacia el exterior. Durante la salida, la hoja pasa entre los rodillos de la cámara, que ejercen presión y distribuyen el reactivo necesario para iniciar el revelado.\n\nLa reacción química sucede entre las capas de la película, por lo que gran parte de este proceso no puede observarse directamente desde fuera.\n\nAl principio, la misma fotografía recién expulsada apenas muestra información. Poco a poco empiezan a aparecer formas, contraste y color.\n\nDurante los siguientes minutos, esa misma imagen continúa desarrollándose. Los detalles se hacen más claros y los colores se estabilizan progresivamente.\n\nFinalmente, la fotografía alcanza su aspecto definitivo. En una SX-70, exposición, expulsión y revelado forman parte de un único proceso automático que comienza con una sola pulsación del disparador.",
     "video_source": "openai_image",
     "video_language": "es-ES",
     "voice_name": "es-ES-AlvaroNeural-Male",

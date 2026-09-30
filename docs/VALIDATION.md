@@ -1,5 +1,63 @@
 # Validación y auditoría — 2026-09-29
 
+## Actualización vigente — 2026-09-30, benchmark controlado
+
+El intento Windows c3ac5e07-4ad2-4a65-bdfa-97cbba9994a8 fue real y técnicamente
+correcto (52.51 s, 1080x1920, 11 imágenes, 41 artifacts), pero Standard-only:
+precision_scenes=0, refs=0. No contenía el video_script controlado y no había
+timeline semántica con subtítulos desactivados. No se repitió en esta sesión.
+El usuario confirmó supervisor ausente durante el retraso de recolección; no hay
+evidencia para atribuirlo a otra causa. El detalle está en WORK_HANDOFF.md.
+
+El benchmark actual incluye el texto literal de siete párrafos. La preservación
+del guion y el rechazo si falta se prueban localmente, sin generación.
+La corrección de timeline requiere el candidato MPT `factory/narration-timeline`.
+
+### Traer el candidato a Windows sin modificar el stable ni generar
+
+Con los repositorios sin cambios locales que interfieran (si git status muestra
+cambios, conservarlos y revisarlos; no usar reset --hard):
+
+```powershell
+Set-Location 'D:\Apps\MPT-Agent-Factory'
+git status --short
+git pull --ff-only origin main
+.\.venv\Scripts\python.exe -m pytest -q
+
+Set-Location 'D:\Apps\MoneyPrinterTurbo-Portable-Windows-1.3.6\MoneyPrinterTurbo'
+git status --short
+git fetch origin refs/heads/factory/narration-timeline:refs/remotes/origin/factory/narration-timeline
+git worktree add -b factory/narration-timeline 'D:\Apps\MPT-worktrees\narration-timeline' origin/factory/narration-timeline
+Copy-Item '.\config.toml' 'D:\Apps\MPT-worktrees\narration-timeline\config.toml'
+Set-Location 'D:\Apps\MPT-worktrees\narration-timeline'
+$env:MPT_RUN_INTEGRATION_TESTS = '0'
+& 'D:\Apps\MoneyPrinterTurbo-Portable-Windows-1.3.6\lib\python\python.exe' -m compileall -q app test/services/test_narration_timeline.py
+& 'D:\Apps\MoneyPrinterTurbo-Portable-Windows-1.3.6\lib\python\python.exe' -m pytest -q test/services/test_narration_timeline.py test/services/test_task.py test/services/test_qwen_quality_v31.py test/services/test_voice.py test/services/test_subtitle.py
+```
+
+El worktree y la rama de esos comandos deben ser nuevos: si ya existen, no
+sobrescribirlos; revisar git worktree list y su estado primero. config.toml es
+privado/ignorado y solo se copia localmente. No añadirlo a Git.
+
+Antes de un futuro benchmark, copiar factory.toml a factory-polaroid.toml y cambiar
+solo los campos de [mpt]:
+
+```toml
+root = 'D:\Apps\MPT-worktrees\narration-timeline'
+branch = 'factory/narration-timeline'
+```
+
+Conservar el Python portable, los servicios y data_dir de la configuración real.
+El helper y el supervisor deberán usar ambos `--config factory-polaroid.toml`.
+No dejar dos supervisores sobre la misma DB, ni encolar todavía: estos comandos
+solo descargan/preparan y prueban el candidato. No hay merge/promoción al stable.
+El resultado visual y Precision real siguen pendientes de una nueva prueba local
+autorizada tras revisar los tests Windows.
+
+---
+
+El contenido que sigue registra las validaciones históricas de la vertical slice.
+
 ## Fuente y alcance
 
 Fuente principal: `AGENT_FACTORY_STATE.md` de `JaviLopez2/CustomVideoGenerator`,

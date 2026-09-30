@@ -1,5 +1,64 @@
 # Test report — MPT Agent Factory v0.1
 
+## Última corrección validada — 2026-09-30, guion controlado y timeline MPT
+
+Factory, worktree factory-polaroid-fix sobre origin/main f00fb33:
+
+```text
+PYTHONPATH=src /workspace/scratch/845a021772d1/MPT-Agent-Factory/.venv/bin/python -m pytest -q
+50 passed in 8.40s
+
+PYTHONPATH=src /workspace/scratch/845a021772d1/MPT-Agent-Factory/.venv/bin/python -m compileall -q src scripts tests
+exit 0
+git diff --check
+exit 0
+```
+
+La pasada completa anterior de esta sesión fue 50 passed in 8.23s. Se añaden
+seis casos: texto literal completo, preservación mediante el helper real/SQLite/
+snapshot, y rechazo de cuatro formas de script ausente/inválido. No se inicia
+worker alguno en esos tests; los archivos de referencias son fixtures inertes.
+La primera pasada enfocada produjo 5 failed, 4 passed in 0.39s por un método de
+DB incorrecto en el test nuevo; se corrigió el test, no el API de producción.
+
+MPT, worktree separado mpt-narration-fix, rama factory/narration-timeline:
+
+```text
+MPT_RUN_INTEGRATION_TESTS=0 /workspace/scratch/845a021772d1/MPT-Agent-Factory/.venv/bin/python -m pytest -q test/services/test_narration_timeline.py test/services/test_task.py test/services/test_qwen_quality_v31.py test/services/test_voice.py test/services/test_subtitle.py
+173 passed, 6 skipped, 1 warning, 20 subtests passed in 5.14s
+
+/workspace/scratch/845a021772d1/MPT-Agent-Factory/.venv/bin/python -m compileall -q app test/services/test_narration_timeline.py
+exit 0
+```
+
+Es una suite ampliada de cinco archivos, no toda la suite MPT. Incluye once casos
+nuevos de timeline, ambas representaciones de SubMaker, subtítulos visibles,
+paso a renderer, presupuesto 9, planner estructurado y Precision mock, fallback
+sin alineación y ausencia de Whisper. Los tests no prueban calidad generativa.
+
+Historial de intentos MPT de esta sesión (sin ocultar fallos):
+
+- Primera regresión: 2 failed, 7 passed in 1.39s; faltaba video_subject en dos
+  fixtures de VideoParams. Corregido en tests.
+- Suite ampliada: error de colección por pydub ausente.
+- Subconjunto sin test_voice: 112 passed, 3 skipped, 18 subtests passed in 3.16s.
+- Con pydub: 1 failed, 172 passed, 6 skipped, 1 warning, 20 subtests passed in
+  3.11s; google.genai ausente en el entorno. Instalado y repetido con resultado
+  final limpio arriba. El warning restante es audioop deprecated de pydub.
+
+Dependencias instaladas para los tests: pydub==0.25.1 y google-genai==2.11.0,
+ya declaradas por MPT, con sus transitivas. Ningún pyproject/lock se modifica.
+Linux Work/Python 3.12.14; no constituye una pasada nativa Windows.
+
+Polaroid SÍ se ejecutó anteriormente en el PC: job
+c3ac5e07-4ad2-4a65-bdfa-97cbba9994a8, succeeded/technical_pass=true,
+52.51 s, 1080x1920, 11 imágenes, 41 artifacts, pero precision_scenes=0 y refs=0.
+No sirve como validación del benchmark controlado. El retraso de colección
+corresponde al supervisor ausente, confirmado por el usuario; no se inventa otra
+causa. No se ha repetido Polaroid ni llamado Qwen/ComfyUI durante esta corrección.
+
+Los apartados siguientes son históricos; no sustituyen este estado vigente.
+
 ## Consolidación Windows y revisión actual — 2026-09-30
 
 El usuario confirmó una ejecución nativa Windows posterior al fix de

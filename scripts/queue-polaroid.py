@@ -83,6 +83,9 @@ def main(argv=None):
     Worktrees(cfg, db).stable()
     verify_settings(cfg.mpt_root)
     spec = json.loads(BENCHMARK.read_text(encoding='utf-8'))
+    script = spec.get('params', {}).get('video_script')
+    if not isinstance(script, str) or not script.strip():
+        raise ValueError('SX-70 benchmark requires the controlled video_script; refusing automatic script generation.')
     files = reference_files(cfg.mpt_root, spec, args.references)
     # Preserve original filenames in the snapshot/manifest, even when MPT's
     # historical storage uses opaque reference-XX-UUID filenames.

@@ -1,5 +1,44 @@
 # MPT Agent Factory v0.1 — handoff
 
+## Estado vigente — corrección del benchmark, 2026-09-30
+
+Este bloque sustituye las afirmaciones históricas de "Polaroid no ejecutado" que
+siguen abajo. Se recibió y analizó la ejecución Windows real
+`c3ac5e07-4ad2-4a65-bdfa-97cbba9994a8`: succeeded, technical_pass=true,
+1080x1920, 52.51 s, 11 imágenes, 41 artifacts registrados, diagnostics schema 3.
+No validó el benchmark de referencias: 11 rutas Standard/z-image-turbo, refs=0,
+precision_scenes=0. Las seis referencias y descripciones sí llegaron al manifest.
+
+Se confirmaron dos causas independientes:
+
+1. MPT estable `6d27ba4963ffe469d635db71eaeec506a8ff4b61` no creaba timeline
+   semántica con subtitle_enabled=false. El fix vive únicamente en la rama/worktree
+   `factory/narration-timeline`: reutiliza subtítulos existentes o serializa los
+   tiempos TTS a narration.srt interno, nunca enviado al render. No carga Whisper
+   para obtener esa timeline. Sin alineación conserva fallback, limitado al budget.
+2. El job no contenía video_script; MPT generó otra narración. Ahora
+   examples/polaroid-job.json contiene literalmente los siete párrafos controlados
+   por el usuario, con separadores LF dobles (sin los corchetes delimitadores del
+   mensaje). queue-polaroid.py rechaza script ausente/vacío y lo conserva sin cambios
+   al crear el job. Regresiones verifican literal completo, SQLite y snapshot.
+
+El usuario comprobó posteriormente en su PC que no había proceso
+`mpt_factory supervisor` activo mientras el worker ya había terminado. El intervalo
+entre result.finished y collecting (~36 min 28 s) corresponde a esa ausencia del
+supervisor. No se atribuye a otro fallo de PID, ComfyUI o SQLite, ni se cambia el
+supervisor en esta corrección.
+
+Las seis descripciones, roles y anchor no se modifican. Tampoco el handshake
+worker.json, los evaluadores, el core estable, los pasos/candidatos de Balanced,
+auto-merge o publicación. Esta sesión solo ejecuta tests locales: NO se repite
+Polaroid, NO se llama a Qwen/ComfyUI, NO se simula un resultado del benchmark.
+Los mocks del planner solo prueban que su salida Precision llega al generador.
+
+Pruebas y limitaciones exactas: TEST_REPORT.md. Para retomar: traer ambos commits,
+crear el worktree MPT candidato y una configuración Factory separada que apunte
+a él; ejecutar tests nativos Windows antes de autorizar una nueva generación.
+Ver docs/VALIDATION.md. No repetir el job contra el stable sin corregir.
+
 ## Consolidación actual — 2026-09-30
 
 Este bloque es el estado que Astra debe tomar como vigente. El historial de abajo
