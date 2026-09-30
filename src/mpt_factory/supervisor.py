@@ -10,7 +10,7 @@ from mpt_factory.agents import TechnicalEvaluator
 from mpt_factory.artifacts import collect
 from mpt_factory.common import FileLock, atomic_json, now, read_json
 from mpt_factory.db import Database, TERMINAL
-from mpt_factory.processes import alive, detached_options, find_runner, identify, terminate_tree
+from mpt_factory.processes import alive, detached_options, find_runner, published_runner, terminate_tree
 from mpt_factory.services import Services
 from mpt_factory.worktrees import Worktrees, git
 
@@ -33,21 +33,19 @@ class MPTVideoAgent:
         # real Python interpreter that runs MPT has a different PID. runner.py
         # publishes its own PID immediately in worker.json; persist that identity
         # instead of assuming Popen.pid is the long-lived worker.
-        worker_file = request.parent / "worker.json"
         deadline = time.monotonic() + 2.0
         while time.monotonic() < deadline:
-            data = read_json(worker_file, {}) or {}
-            worker_pid = data.get("pid")
-            if worker_pid:
-                worker_started = identify(worker_pid)
-                if worker_started is not None:
-                    return int(worker_pid), worker_started
-            if process.poll() is not None:
+            identity = published_runner(request)
+            if identity:
+                return identity
+            # A redirector exiting is not proof that its child has exited. Give
+            # that child the full handshake window unless a result is durable.
+            if (request.parent / "result.json").is_file():
                 break
             time.sleep(0.02)
         # An already-exited child may have no identity; recovery uses request argv
         # and its durable result. Never substitute the supervisor's wall clock.
-        return process.pid, identify(process.pid)
+        return find_runner(request) or (process.pid, None)
 
     def reap(self):
         for pid, process in list(self.children.items()):
@@ -129,13 +127,14 @@ class Supervisor:
         if progress and progress.get("progress") != job["progress"]:
             self.db.update(job["id"], progress=int(progress.get("progress", 0)))
         pid, started = job["pid"], job["process_started"]
-        if not alive(pid, started):
-            recovered = find_runner(request)
-            if recovered:
-                pid, started = recovered
-                self.db.update(job["id"], pid=pid, process_started=started)
-                self.db.event(job["id"], "worker_recovered", pid=pid)
-        live = alive(pid, started)
+        # Revalidate request identity even if SQLite's PID is still alive: it
+        # could be a redirector or a process belonging to another attempt.
+        recovered = find_runner(request)
+        if recovered and recovered != (pid, started):
+            pid, started = recovered
+            self.db.update(job["id"], pid=pid, process_started=started)
+            self.db.event(job["id"], "worker_recovered", pid=pid)
+        live = bool(recovered) and alive(pid, started)
         result = read_json(folder / "result.json")
         if result and result.get("job_id") != job["id"]:
             raise RuntimeError("Worker result belongs to a different job")
