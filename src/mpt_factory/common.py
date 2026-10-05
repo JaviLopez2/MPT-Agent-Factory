@@ -14,6 +14,30 @@ def now() -> float:
     return time.time()
 
 
+_TRANSIENT_WINDOWS_FILE_ERRORS = {5, 32, 33}
+_ATOMIC_REPLACE_RETRY_DELAYS = (0.02, 0.04, 0.08, 0.12, 0.18, 0.25)
+
+
+def transient_windows_file_error(exc: BaseException) -> bool:
+    """Return True only for short-lived Windows sharing/access lock failures."""
+    return getattr(exc, "winerror", None) in _TRANSIENT_WINDOWS_FILE_ERRORS
+
+
+def _replace_with_retry(source: str | Path, destination: str | Path) -> None:
+    """Preserve atomic replace semantics while tolerating brief Windows locks."""
+    for attempt in range(len(_ATOMIC_REPLACE_RETRY_DELAYS) + 1):
+        try:
+            os.replace(source, destination)
+            return
+        except OSError as exc:
+            if (
+                not transient_windows_file_error(exc)
+                or attempt >= len(_ATOMIC_REPLACE_RETRY_DELAYS)
+            ):
+                raise
+            time.sleep(_ATOMIC_REPLACE_RETRY_DELAYS[attempt])
+
+
 def read_json(path: Path, default=None):
     try:
         return json.loads(path.read_text(encoding="utf-8-sig"))
@@ -29,7 +53,7 @@ def atomic_json(path: Path, value) -> None:
             json.dump(value, stream, ensure_ascii=False, indent=2, default=str)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(name, path)
+        _replace_with_retry(name, path)
     finally:
         Path(name).unlink(missing_ok=True)
 
