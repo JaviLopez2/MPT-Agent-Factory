@@ -3,12 +3,19 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 from mpt_factory.agents import TechnicalEvaluator
 from mpt_factory.artifacts import collect
-from mpt_factory.common import FileLock, atomic_json, now, read_json
+from mpt_factory.common import (
+    FileLock,
+    atomic_json,
+    now,
+    read_json,
+    transient_windows_file_error,
+)
 from mpt_factory.db import Database, TERMINAL
 from mpt_factory.processes import alive, detached_options, find_runner, published_runner, terminate_tree
 from mpt_factory.services import Services
@@ -170,6 +177,40 @@ class Supervisor:
             result=json.dumps(result, ensure_ascii=False), progress=100,
             error=None if result["technical_pass"] else "; ".join(result["failures"]))
 
+    def _warn_housekeeping(self, action: str, exc: BaseException) -> None:
+        try:
+            print(
+                f"Factory supervisor housekeeping warning: {action}: "
+                f"{type(exc).__name__}: {exc}",
+                file=sys.stderr,
+                flush=True,
+            )
+        except Exception:
+            pass
+
+    def _run_transient_safe(self, action: str, callback) -> bool:
+        """Ignore only exhausted transient Windows file-lock failures."""
+        try:
+            callback()
+            return True
+        except OSError as exc:
+            if not transient_windows_file_error(exc):
+                raise
+            self._warn_housekeeping(action, exc)
+            return False
+
+    def _publish_supervisor_status(self, status: str) -> bool:
+        return self._run_transient_safe(
+            f"publish supervisor status={status}",
+            lambda: atomic_json(
+                self.cfg.data / "supervisor.json",
+                {"pid": os.getpid(), "time": now(), "status": status},
+            ),
+        )
+
+    def _export_events_resilient(self) -> bool:
+        return self._run_transient_safe("export events", self.export_events)
+
     def export_events(self):
         folder = self.cfg.data / "logs"
         folder.mkdir(exist_ok=True)
@@ -205,8 +246,8 @@ class Supervisor:
                 # further claims, until the operator resolves the underlying cause.
                 self.db.event(job["id"], "supervisor_error", error=f"{type(exc).__name__}: {exc}")
                 self.db.update(job["id"], error=f"Supervisor needs attention: {exc}")
-        self.export_events()
-        atomic_json(self.cfg.data / "supervisor.json", {"pid": os.getpid(), "time": now(), "status": "running"})
+        self._export_events_resilient()
+        self._publish_supervisor_status("running")
 
     def run(self, once=False, until_idle=False):
         with FileLock(self.cfg.data / "supervisor.lock"):
@@ -226,5 +267,19 @@ class Supervisor:
                         return
                     time.sleep(self.cfg.poll_seconds)
             finally:
-                self.export_events()
-                atomic_json(self.cfg.data / "supervisor.json", {"pid": os.getpid(), "time": now(), "status": "stopped"})
+                # Cleanup must never replace the exception that actually stopped
+                # the supervisor. Transient Windows sharing violations are already
+                # swallowed by the resilient wrappers; any other cleanup failure
+                # propagates only when there is no active exception to preserve.
+                active_exception = sys.exc_info()[0] is not None
+                for cleanup in (
+                    self._export_events_resilient,
+                    lambda: self._publish_supervisor_status("stopped"),
+                ):
+                    try:
+                        cleanup()
+                    except Exception as exc:
+                        if active_exception:
+                            self._warn_housekeeping("shutdown cleanup", exc)
+                            continue
+                        raise
